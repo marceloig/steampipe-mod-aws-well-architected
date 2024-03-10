@@ -1,40 +1,13 @@
 // Risk types from aws_wellarchitected_workload are not returned if their count is 0, so use coalesce(..., 0)
 // But from aws_wellarchitected_lens_review, all risk types are returned even when their count is 0
-dashboard "wellarchitected_benchmark_lens_risks_report" {
+dashboard "wellarchitected_benchmark_wa_framework_risks_report" {
 
-  title         = "AWS Well-Architected Benchmark Lens Risks Report"
-  documentation = file("./dashboards/docs/wellarchitected_benchmark_lens_risks_report.md")
+  title         = "AWS Well-Architected Benchmark WA Framework Risks Report"
+  documentation = file("./dashboards/docs/wellarchitected_benchmark_wa_framework_risks_report.md")
 
   tags = merge(local.wellarchitected_common_tags, {
     type = "Report"
   })
-
-  input "lens_arn" {
-    title = "Select a lens:"
-    type  = "multicombo"
-    width = 3
-
-    sql = <<-EOQ
-      select
-        title as label,
-        arn as value,
-        json_build_object(
-          'account_id', account_id,
-          'region', region,
-          'lens_alias', lens_alias
-        ) as tags
-      from
-        aws_wellarchitected_lens
-      where
-        region = 'us-east-1' 
-      order by
-        case
-          arn when 'arn:aws:wellarchitected::aws:lens/wellarchitected' then 0
-          else 1
-        end,
-        arn
-    EOQ
-  }
 
   container {
     title = "Benchmark Total"
@@ -46,7 +19,7 @@ dashboard "wellarchitected_benchmark_lens_risks_report" {
       args = {
         "risk" = "HIGH"
         "label" = "High Risks"
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
     }
     card {
@@ -56,7 +29,7 @@ dashboard "wellarchitected_benchmark_lens_risks_report" {
       args = {
         "risk" = "MEDIUM"
         "label" = "Medium Risks"
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
     }
     card {
@@ -66,7 +39,7 @@ dashboard "wellarchitected_benchmark_lens_risks_report" {
       args = {
         "risk" = "NONE"
         "label" = "Resolved"
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
     }
   }
@@ -79,9 +52,9 @@ dashboard "wellarchitected_benchmark_lens_risks_report" {
       title = "Cost Optimization"
       args = {
         "pillar" = "costOptimization"
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
-      width = 2
+      width = 4
     }
 
     chart {
@@ -89,9 +62,9 @@ dashboard "wellarchitected_benchmark_lens_risks_report" {
       title = "Operational Excellence"
       args = {
         "pillar" = "operationalExcellence"
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
-      width = 2
+      width = 4
     }
 
     chart {
@@ -99,19 +72,22 @@ dashboard "wellarchitected_benchmark_lens_risks_report" {
       title = "Performance Efficiency"
       args = {
         "pillar" = "performance"
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
-      width = 2
+      width = 4
     }
 
+  }
+
+  container {
     chart {
       base = chart.risk_by_pillar
       title = "Reliability"
       args = {
         "pillar" = "reliability"
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
-      width = 2
+      width = 4
     }
 
     chart {
@@ -119,9 +95,9 @@ dashboard "wellarchitected_benchmark_lens_risks_report" {
       title = "Security"
       args = {
         "pillar" = "security"
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
-      width = 2
+      width = 4
     }
 
     chart {
@@ -129,9 +105,9 @@ dashboard "wellarchitected_benchmark_lens_risks_report" {
       title = "Sustainability"
       args = {
         "pillar" = "sustainability"
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
-      width = 2
+      width = 4
     }
 
   }
@@ -143,12 +119,17 @@ dashboard "wellarchitected_benchmark_lens_risks_report" {
       title = "Risk Counts"
       query = query.wellarchitected_workload_lens_risk_count_table
       args = {
-        "lens_arn" = self.input.lens_arn.value
+        "lens_arn" = var.lens_arn
       }
     }
 
   }
 }
+
+variable "lens_arn" {
+    type    = string
+    default = "arn:aws:wellarchitected::aws:lens/wellarchitected" 
+  }
 
 chart "risk_by_pillar" {
   type = "donut"
